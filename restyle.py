@@ -185,7 +185,7 @@ def frame_for(key, nm, mask, es, sc):
     else: raise RuntimeError(f'need manual eyes for {key} {nm}: {mine}')
     v = (e2 - e1) / sc; return dict(mid=(((e1 + e2) / 2) / sc).round(1).tolist(), ang=float(np.degrees(np.arctan2(v[1], v[0]))), d=float(np.linalg.norm(v))), mine
 
-CM = dict(s1=dict(green='teal', yellow='coral', blue='apricot'), s3=dict(yellow='apricot', green='teal'), s8=dict(yellow='apricot'),
+CM = dict(s1=dict(green='teal', yellow='coral', blue='yellow'), s3=dict(yellow='apricot', green='teal'), s8=dict(yellow='apricot'),
           s9=dict(blue='teal', green='apricot'), p7=dict(yellow='yellow'), c5=dict(red='coral'), c6=dict(green='sage'))
 JOBS = dict(s1=((0, 2576), 14, 1500, ('green', 'yellow', 'blue')), s3=((0, 2576), 14, 450, ('green', 'yellow')), s8=((2100, 2576), 14, 1500, ('yellow',)),
             s9=((0, 2576), 14, 450, ('green', 'blue')), p7=((0, 260), 32, 450, ('yellow',)), c5=((0, 300), 32, 600, ('red',)), c6=((0, 300), 32, 600, ('green',)))

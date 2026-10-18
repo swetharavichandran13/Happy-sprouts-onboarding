@@ -34,7 +34,7 @@ function face(c,mode){const f=c.frame;const light=['#E9C64A','#F4A261'].includes
  const k=f.d/300*1.1;let s=`<g transform="translate(${f.mid[0]} ${f.mid[1]}) rotate(${f.ang}) scale(${k})">`;
  if(mode!=='eyes'){
   s+=`<ellipse cx="-215" cy="72" rx="56" ry="32" fill="${B}" opacity="${bo}" filter="url(#bl)"/><ellipse cx="215" cy="72" rx="56" ry="32" fill="${B}" opacity="${bo}" filter="url(#bl)"/>`;
-  s+=`<path d="M-40 106 Q-20 138 0 106 Q20 138 40 106" stroke="${INK}" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`}
+  s+=`<path d="M-42 98 Q0 146 42 98" stroke="${INK}" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`}
  if(c.eyes!=='none'&&(mode==='eyes'||(mode==='base'&&c.eyes==='baked')))s+=eyeShape(-150)+eyeShape(150);
  return s+'</g>'}
 let out=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${S.W} ${S.H}" width="${S.W}" height="${S.H}">${defs}<g clip-path="url(#cv)">`;
