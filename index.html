@@ -1,0 +1,80 @@
+<!doctype html><meta charset=utf-8><title>Happy Sprouts – onboarding cover-flow</title>
+<style>html,body{margin:0;height:100%;overflow:hidden;background:#1b1712}
+#stage{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;background:radial-gradient(ellipse at 50% 48%,#FFFFFF 0,#FEFCF8 55%,#F8F4EC 100%)}
+.scr{position:absolute;left:-594px;top:-1288px;width:1188px;height:2576px;border-radius:92px;overflow:hidden;background:#FDF9F0;box-shadow:0 50px 120px rgba(90,70,40,.20);transform-origin:594px 1288px}
+.scr *{position:absolute;display:block;user-select:none}#fade{position:absolute;inset:0;background:#FBF8F2;opacity:0;z-index:999}.lab{position:absolute;left:0;top:0;width:1100px;margin-left:-550px;text-align:center;font-family:Inter,'Helvetica Neue',Arial,sans-serif;pointer-events:none;opacity:0;z-index:500}.lab b{display:block;font-weight:600;font-size:31px;line-height:38px;color:#2f2a25;letter-spacing:.005em}.lab span{display:block;margin-top:4px;font-weight:400;font-size:24px;line-height:30px;color:#8a8175}</style>
+<div id=stage><div id=fade></div></div><script src=data.js></script><script>
+/* ===== EDIT ME – all times in seconds ===== */
+const CFG={
+ loops:2, move:.95,                                   // loops through screens 1-9, cover-flow step length
+ hold:[3.0,3.4,6.2,5.2,5.8,5.8,6.6,3.0,3.6],          // time each screen is centred (screens 1..9)
+ tail:.8, fadeIn:.5,                                  // end fade-out / start fade-in
+ flow:{x:[0,385,665,880,1040],s:[1,.74,.52,.38,.3],o:[1,.72,.4,.16,0],centreH:880,cy:590,labelTop:44,labelFade:[.2,.5]}, // by distance from centre
+ blink:{dur:.22,s1:[[.9,3.1],[.4,2.7],[1.6,3.6]],s8:[[1.5,3.0]],s9:[[1.3,3.2],[1.9,2.8]]},
+ jump:{height:150,len:.72,stagger:.26,cycle:2.0,start:.3},
+ age:[[0,2],[.9,2],[1.8,3],[2.5,3],[3.8,1],[4.5,1],[5.4,2],[6.0,2]], // [time, wheel position] 0=0-3,1=4-6,2=7-12,3=13+,4=Moms
+ scroll4:[[.5,0],[1.5,760],[1.9,760],[2.6,1080],[3.1,1080],[4.5,0],[4.9,0]],  // [time, px] down, pause, down, then back up
+ scroll7:[[.5,0],[1.5,650],[2.0,650],[3.0,1250],[3.4,1250],[4.1,1543],[4.5,1543],[6.2,0],[6.5,0]],
+ car:{taps:[[1.5,1],[3.0,1],[4.5,-1]],trans:.5,tapR:.84,tapL:.16,tapY:.5,showTap:true}  // [time, +1 = tap right / next, -1 = tap left / previous]; 3 supplied slides
+};
+const NW=1188,NH=2576,st=document.getElementById('stage'),N=9,M=CFG.move;
+const cl=(x,a=0,b=1)=>Math.min(b,Math.max(a,x)),sm=x=>{x=cl(x);return x*x*x*(x*(6*x-15)+10)};
+const key=(k,t)=>{if(t<=k[0][0])return k[0][1];for(let i=0;i<k.length-1;i++)if(t<k[i+1][0])return k[i][1]+(k[i+1][1]-k[i][1])*sm((t-k[i][0])/(k[i+1][0]-k[i][0]));return k[k.length-1][1]};
+const E=(p,t,c)=>{const e=document.createElement(t);Object.assign(e.style,c||{});p.appendChild(e);return e};
+const I=(p,src,x,y,w,h,c)=>{const e=E(p,'img',Object.assign({left:x+'px',top:y+'px'},w?{width:w+'px',height:h+'px'}:{},c));e.src='a/'+src;return e};
+const IB=(p,src,x,y,w,h,c)=>{const e=I(p,src,x,y,w,h,c);e.src=src;return e};
+const blinkP=(a,o,per)=>{if(a<o)return 0;const u=(a-o)%per;if(u>CFG.blink.dur)return 0;return u<.07?u/.07:u<.11?1:1-(u-.11)/.11};
+function eyes(root,n,chars){const P=EYES.filter(e=>e.s==n).map(e=>({e,el:I(root,e.f.slice(2),e.x,e.y,e.w,e.h)}));
+ return lt=>P.forEach((q,i)=>{const p=blinkP(lt,...chars[i>>1]),f=(q.e.ey0+p*(q.e.ey1-q.e.ey0+8))/q.e.h;q.el.style.clipPath=`inset(0 0 ${(1-f)*100}% 0)`})}
+const island=r=>E(r,'div',{left:'422px',top:'38px',width:'344px',height:'102px',borderRadius:'51px',background:'#181B25',zIndex:5});
+function scroller(r,page,H,keys,veil){const L=E(r,'div',{left:0,top:0,width:NW+'px',height:H+'px'});IB(L,page,0,0,NW,H);const V=veil?E(r,'div',{left:0,top:0,width:NW+'px',height:'190px',background:'linear-gradient(#FDF8EE 62%,rgba(253,248,238,0))',zIndex:4,opacity:0}):null;I(r,'status.png',0,0,NW,150,{zIndex:5});return a=>{const sc=key(keys,a);L.style.transform=`translateY(${-sc}px)`;if(V)V.style.opacity=cl(sc/220)}}
+function carousel(r,n){const S=[0,1,2].map(k=>IB(r,`b/c${n}_${k}.jpg`,0,0,NW,NH));island(r);
+ const tp=E(r,'div',{width:'150px',height:'150px',borderRadius:'75px',background:'rgba(255,255,255,.6)',top:NH*CFG.car.tapY-75+'px',opacity:0,zIndex:6,boxShadow:'0 0 40px rgba(0,0,0,.14)'});
+ return a=>{let pos=0;CFG.car.taps.forEach(([t,d])=>pos+=d*sm((a-t)/CFG.car.trans));S.forEach((s,k)=>s.style.transform=`translateX(${(k-pos)*NW}px)`);
+  let o=0,sc=.6,dir=1;CFG.car.taps.forEach(([t,d])=>{const u=(a-(t-.12))/.5;if(CFG.car.showTap&&u>0&&u<1){o=Math.max(o,u<.2?u/.2:1-(u-.2)/.8);sc=.55+.6*u;dir=d}});
+  tp.style.left=NW*(dir>0?CFG.car.tapR:CFG.car.tapL)-75+'px';tp.style.opacity=o*.9;tp.style.transform=`scale(${sc})`}}
+function age(r){I(r,'s3_base.jpg',0,0);const W=E(r,'div',{left:0,top:'690px',width:NW+'px',height:'1322px',overflow:'hidden',webkitMaskImage:'linear-gradient(transparent,#000 5%,#000 96.5%,transparent)'});
+ const T=WHEEL.top,B=WHEEL.bot,S=WHEEL.sel,YC=WHEEL.YC,P=326,mid=(a,b)=>(a.cy+b.cy)/2;
+ const mk=(p,dark,bn,o0,kind)=>({p,dark,bn,o0,kind,el:I(W,p.f,p.cx-p.w/2,0,p.w,p.h)});
+ const items=[[T[0],T[1]],[T[2],T[3]],[S[0],S[1]],[B[0],B[1]],[B[2]]].map((ps,i)=>{const y=ps.length>1?mid(ps[0],ps[1]):ps[0].cy,sel=i==2,g=sel?1/1.49:1;
+  return{y,sel,parts:ps.map((p,j)=>mk(p,sel,sel?(j?.91:.54):1,(p.cy-y)*g,ps.length>1?(j?'y':'n'):'m'))}});
+ const Hh=d=>d>=0?(d<=1?d*309:309+(d-1)*212):(d>=-1?d*315:-(315+(-d-1)*232)); // option spacing relative to the fixed highlight
+ const BIAS=items[2].y-YC;
+ return a=>{const o=key(CFG.age,a);items.forEach((it,i)=>{const hd=Hh(i-o),d=Math.abs(hd)/330,s=sm(1-d),f=cl(1-(d-1)*.61),y=it.y+hd-Hh(i-2)+(it.sel?-(1-s):s)*BIAS;
+  it.parts.forEach(q=>{const k=q.kind=='y'?.1:q.kind=='m'?.55:.85,sc=q.bn*(1+k*s),yy=y+q.o0*(1+.49*s)-690-q.p.h/2;
+   Object.assign(q.el.style,{top:yy+'px',transform:`scale(${sc})`,opacity:f,filter:`brightness(${q.dark?1+2.4*(1-s):1-.72*s})`})})})}}
+const GP={green:[0,0,-6],red:[159,8,0],yellow:[105,-10,0],blue:[0,0,6]};
+const SC=[
+ r=>{I(r,'s1.jpg',0,0);const b=eyes(r,1,CFG.blink.s1);return(a,lt)=>b(lt)},
+ r=>{I(r,'s2_clean.jpg',0,0);const J=CFG.jump,S=GUM.map(g=>I(r,`g_${g.c}.png`,g.x,g.y,g.w,g.h,{transformOrigin:'50% 100%'}));
+  return(a,lt)=>{lt=Math.min(lt,J.start+2*J.cycle);S.forEach((s,k)=>{const g=GUM[k],[rest,r0,r1]=GP[g.c],q=(((lt-J.start-k*J.stagger)%J.cycle)+J.cycle)%J.cycle,u=q/J.len,lift=u<1?4*u*(1-u):0;
+   let sy=1+.05*lift;if(u>=1&&q-J.len<.16)sy-=.08*Math.sin(Math.PI*(q-J.len)/.16);
+   s.style.transform=`translateY(${rest-J.height*lift}px) rotate(${r0*(1-lift)+r1*lift}deg) scale(${1/Math.sqrt(sy)},${sy})`})}},
+ age,
+ r=>scroller(r,'b/p4.jpg',3656,CFG.scroll4),
+ r=>carousel(r,5),r=>carousel(r,6),
+ r=>scroller(r,'b/p7.jpg',4119,CFG.scroll7,true),
+ r=>{I(r,'s8.jpg',0,0);const b=eyes(r,8,CFG.blink.s8);return(a,lt)=>b(lt)},
+ r=>{I(r,'s9.jpg',0,0);const b=eyes(r,9,CFG.blink.s9);return(a,lt)=>b(lt)}];
+const V=CFG.loops*N,S0=[];let acc=0;for(let n=0;n<V;n++){S0.push(acc);acc+=CFG.hold[n%N]+M}
+const TOTAL=S0[V-1]+CFG.hold[(V-1)%N]+CFG.tail,FADE0=TOTAL-CFG.tail;
+const vis=[...Array(N)].map((_,i)=>{const L=[];for(let n=i;n<V;n+=N){const q=n-4,R=q>=0?S0[q]+CFG.hold[q%N]:-1e9;L.push({R,S:S0[n],hold:CFG.hold[i]})}return L});
+const LAB=[['Splash Screen','Introduce the brand before asking for anything'],['Loading Screen','Build anticipation'],['Age Selection','Personalise the experience around the child'],['Parent Focus','Understand what parents need most'],['Did You Know?','Build curiosity with credible insight'],['Here\u2019s How We Help','Demonstrate value before the sign-up ask'],['Personalised Preview','Make the benefits tangible'],['Brand Tagline','Build emotional connection to support conversion'],['Sign Up','Earn the phone number after value is established']];
+const labs=LAB.map(([n,p])=>{const e=E(st,'div');e.className='lab';e.innerHTML=`<b>${n}</b><span>${p}</span>`;return e});
+const scr=SC.map(f=>{const el=E(st,'div');el.className='scr';return{el,upd:f(el)}});
+const lerpT=(arr,r)=>{const i=Math.min(Math.floor(r),arr.length-2),f=r-i;return arr[i]+(arr[i+1]-arr[i])*f};
+function renderN(t){let p=0;for(let n=0;n<V-1;n++)p+=sm((t-(S0[n]+CFG.hold[n%N]))/M);
+ const F=CFG.flow,sc0=F.centreH/NH;
+ scr.forEach((s,i)=>{let r=(((i-p)%N)+N+N/2)%N-N/2;const ar=Math.min(Math.abs(r),4),L=labs[i],lo=cl((F.labelFade[1]-ar)/(F.labelFade[1]-F.labelFade[0]));
+  L.style.opacity=lo;L.style.transform=`translate(${960+Math.sign(r)*lerpT(F.x,Math.min(ar,4))*.3}px,${F.labelTop+(1-lo)*8}px)`;
+  if(ar>=3.95){s.el.style.display='none';return}s.el.style.display='block';
+  const x=Math.sign(r)*lerpT(F.x,ar),sc=lerpT(F.s,ar)*sc0,o=lerpT(F.o,ar);
+  Object.assign(s.el.style,{transform:`translate(${960+x}px,${F.cy}px) scale(${sc})`,opacity:o,zIndex:Math.round(100-ar*10)});
+  let v=vis[i][0];for(const q of vis[i])if(q.R<=t)v=q;const a=t-v.S,act=a>-M-.3&&a<v.hold+M+.3;
+  s.upd(a,act?a+M:0)});
+ document.getElementById('fade').style.opacity=Math.max(1-t/CFG.fadeIn,(t-FADE0)/CFG.tail,0)}
+const fit=()=>{if(/render/.test(location.search))return;const k=Math.min(innerWidth/1920,innerHeight/1080);st.style.transform=`scale(${k})`;st.style.left=(innerWidth-1920*k)/2+'px';st.style.top=(innerHeight-1080*k)/2+'px'};
+const SPEED=parseFloat((location.search.match(/speed=([\d.]+)/)||[0,CFG.speed||1])[1]);function render(t){renderN(t*SPEED)}
+fit();addEventListener('resize',fit);render(0);window.TOTAL=TOTAL/SPEED;window.S0=S0;window.render=render;window.ready=Promise.all([...document.images].map(i=>i.decode().catch(()=>0)));
+if(!/render/.test(location.search)){let t0=performance.now();(function f(n){render(Math.min(((n-t0)/1000)%(TOTAL/SPEED+1),TOTAL/SPEED));requestAnimationFrame(f)})(t0)}
+</script>
