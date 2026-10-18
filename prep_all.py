@@ -1,45 +1,12 @@
 import cv2,numpy as np,json
+import gum
 from scipy import ndimage as ndi
 U='src/'
 names={1:'1__Splash.jpg',2:'2__Loading.jpg',3:'3__Age.jpg',8:'8__Tagline.jpg',9:'9__Sign_Up.jpg'}
 S={i:cv2.imread(U+n) for i,n in names.items()}
-# plain = before brows/catchlights, used to build the eyelid patches so blinks stay clean
-SP={i:cv2.imread(U+n.replace('.jpg','__plain.jpg')) if i in (1,8,9) else S[i] for i,n in names.items()}
 for i,s in S.items(): cv2.imwrite(f'a/s{i}.jpg',s,[cv2.IMWRITE_JPEG_QUALITY,97])
-# ---------- eyes (screens 1,8,9)
-def eyes(i,ymin,ymax,minpix):
-    s=SP[i].astype(int);mn=s.min(2);pup=(s.max(2)<14);pup[:ymin]=0;pup[ymax:]=0
-    L,n=ndi.label(pup);out=[]
-    for k in range(1,n+1):
-        m=L==k
-        if m.sum()<minpix:continue
-        d=ndi.binary_dilation(m,iterations=14)
-        wh=(mn>205)&(np.abs(s[...,0]-s[...,2])<30)
-        wl,wn=ndi.label(wh|m);ids=np.unique(wl[d&wh]);ids=ids[ids>0]
-        ids=[j for j in ids if (wl==j).sum()<40000]
-        out.append(ndi.binary_fill_holes(np.isin(wl,ids)|m))
-    return out
-P=[]
-for i,(a,b,mp) in {1:(150,2576,1500),8:(2150,2576,1500),9:(30,2576,450)}.items():
-    for j,em in enumerate(eyes(i,a,b,mp)):
-        ys,xs=np.nonzero(em)
-        dm=ndi.binary_dilation(em,iterations=9);ring=ndi.binary_dilation(em,iterations=34)&~ndi.binary_dilation(em,iterations=12)
-        s=SP[i].astype(float);yy,xx=np.nonzero(ring);ok=(s[yy,xx].min(1)>40)&(s[yy,xx].max(1)<256);yy,xx=yy[ok],xx[ok]
-        pad=40;x0,x1,y0,y1=max(xs.min()-pad,0),min(xs.max()+pad,1187),max(ys.min()-pad,0),min(ys.max()+pad,2575)
-        X=lambda x,y:np.stack([np.ones_like(x),x,y,x*x,x*y,y*y],1)
-        gx,gy=np.meshgrid(np.arange(x0,x1+1),np.arange(y0,y1+1));gx=gx.astype(float);gy=gy.astype(float)
-        sx,sy=(xx-x0)/100.,(yy-y0)/100.;fill=np.zeros(gx.shape+(3,))
-        for c in range(3):
-            w=np.linalg.lstsq(X(sx,sy),s[yy,xx,c],rcond=None)[0]
-            fill[...,c]=(X(((gx-x0)/100.).ravel(),((gy-y0)/100.).ravel())@w).reshape(gx.shape)
-        fill=np.clip(fill,0,255)
-        al=cv2.GaussianBlur(dm[y0:y1+1,x0:x1+1].astype(np.float32),(0,0),2.5)
-        cx,cy=int(xs.mean()-x0),int(ys.mean()-y0);r=int((xs.max()-xs.min())*.32)
-        crease=np.zeros(gx.shape,np.uint8);cv2.ellipse(crease,(cx,cy-r//3),(r,int(r*.55)),0,15,165,255,7,cv2.LINE_AA)
-        crease=cv2.GaussianBlur(crease,(0,0),1.2)[...,None]/255*.55
-        fill=fill*(1-crease)+fill*.45*crease
-        fn=f'a/eye{i}_{j}.png';cv2.imwrite(fn,np.dstack([fill,al*255]).astype(np.uint8))
-        P.append(dict(s=i,f=fn,x=int(x0),y=int(y0),w=int(x1-x0+1),h=int(y1-y0+1),ey0=int(ys.min()-y0),ey1=int(ys.max()-y0)))
+# ---------- eyes (screens 1,8,9): open-eye sprites written by restyle.py (blink = scaleY in index.html)
+P=json.load(open(U+'eyes.json'))
 print('eyes per screen',{i:sum(p['s']==i for p in P) for i in (1,8,9)})
 # ---------- gummies (screen 2)
 s=S[2].astype(np.float32);bg=np.median(s[:,:60],axis=1)[:,None,:];body=np.abs(s-bg).max(2)>48;body[:300]=0
@@ -48,12 +15,14 @@ for k in range(1,n+1):
     m=L==k
     if m.sum()<8000:continue
     ys,xs=np.nonzero(m);G.append((xs.min(),xs.max(),ys.min(),ys.max(),m))
+G2=dict(green='teal',red='coral',yellow='sage',blue='apricot')   # G2 Garden: teal, coral, sage, apricot (left to right)
 G.sort(key=lambda g:g[0]);meta=[];allm=np.zeros(body.shape,np.uint8)
 for (x0,x1,y0,y1,m),c in zip(G,['green','red','yellow','blue']):
     mm=ndi.binary_fill_holes(m);allm|=mm.astype(np.uint8)
     a=cv2.GaussianBlur(ndi.binary_erosion(mm,iterations=1).astype(np.float32),(0,0),1.3);p=8;sl=(slice(y0-p,y1+p),slice(x0-p,x1+p))
-    cv2.imwrite(f'a/g_{c}.png',np.dstack([S[2][sl],(a[sl]*255).astype(np.uint8)]));meta.append(dict(c=c,x=int(x0-p),y=int(y0-p),w=int(x1-x0+2*p),h=int(y1-y0+2*p)))
-cv2.imwrite('a/s2_clean.jpg',cv2.inpaint(S[2].copy(),cv2.dilate(allm,np.ones((9,9),np.uint8)),9,cv2.INPAINT_TELEA),[cv2.IMWRITE_JPEG_QUALITY,97])
+    cv2.imwrite(f'a/g_{c}.png',np.dstack([S[2][sl],(a[sl]*255).astype(np.uint8)]));cv2.imwrite(f'a/g_{c}.png',gum.recolor(f'a/g_{c}.png',G2[c]));meta.append(dict(c=c,x=int(x0-p),y=int(y0-p),w=int(x1-x0+2*p),h=int(y1-y0+2*p)))
+clean2=cv2.inpaint(S[2].copy(),cv2.dilate(allm,np.ones((15,15),np.uint8)),9,cv2.INPAINT_TELEA)
+cv2.imwrite('a/s2_clean.jpg',gum.glow_recolor(clean2),[cv2.IMWRITE_JPEG_QUALITY,97])   # G2 glows under the gummies
 # ---------- status overlay
 s2=S[2].astype(np.float32)[:150];bg2=np.median(s2[:,:60],axis=1)[:,None,:]
 Lm=lambda x:x@np.array([.114,.587,.299],np.float32)
@@ -100,15 +69,14 @@ for n,f in ((5,'5__carousel.jpg'),(6,'6__carousel.jpg')):
     for k in range(3):
         s_=im[:,int(round(k*Wd/3)):int(round((k+1)*Wd/3))].copy();sc=s_.shape[1]/1188
         ya,yb,xa,xb=int(26*sc),int(146*sc),int(412*sc),int(776*sc)
-        for y in range(ya,yb):
-            l=s_[y,xa-6:xa-2].mean(0);r=s_[y,xb+2:xb+6].mean(0);t=np.linspace(0,1,xb-xa)[:,None];s_[y,xa:xb]=l*(1-t)+r*t
+        # (island already left out of the tile by restyle.py; index.html draws it as a static layer)
         cv2.imwrite(f'b/c{n}_{k}.jpg',s_,[cv2.IMWRITE_JPEG_QUALITY,96])
 # ---------- scroll pages
 for n,f,isl in ((4,'4__Focus_scroll.jpg',0),(7,'7__scroll.jpg',1)):
     im=cv2.imread(U+f);sc=im.shape[1]/1188;g=Lm(im.astype(np.float32));mask=np.zeros(im.shape[:2],np.uint8)
-    for (xa,xb,ya,yb,th) in ((150,292,52,125,105),(838,1078,58,110,105)):
+    for (xa,xb,ya,yb,th) in (((150,292,52,125,105),(838,1078,58,110,105)) if n==4 else ()):
         a_,b_,c_,d_=int(xa*sc),int(xb*sc),int(ya*sc),int(yb*sc);mask[c_:d_,a_:b_]=(g[c_:d_,a_:b_]<th)
-    if isl:
+    if False:
         a_,b_,c_,d_=int(412*sc),int(776*sc),int(30*sc),int(146*sc);sub=im[c_:d_,a_:b_].astype(int);mask[c_:d_,a_:b_]|=(np.abs(sub-[37,27,24]).max(2)<24).astype(np.uint8)
     mask=cv2.dilate(mask,np.ones((5,5),np.uint8));cv2.imwrite(f'b/p{n}.jpg',cv2.inpaint(im,mask,5,cv2.INPAINT_TELEA),[cv2.IMWRITE_JPEG_QUALITY,95])
     print('page',n,im.shape,'-> height at 1188 wide',round(im.shape[0]/sc))

@@ -24,8 +24,9 @@ const E=(p,t,c)=>{const e=document.createElement(t);Object.assign(e.style,c||{})
 const I=(p,src,x,y,w,h,c)=>{const e=E(p,'img',Object.assign({left:x+'px',top:y+'px'},w?{width:w+'px',height:h+'px'}:{},c));e.src='a/'+src;return e};
 const IB=(p,src,x,y,w,h,c)=>{const e=I(p,src,x,y,w,h,c);e.src=src;return e};
 const blinkP=(a,o,per)=>{if(a<o)return 0;const u=(a-o)%per;if(u>CFG.blink.dur)return 0;return u<.07?u/.07:u<.11?1:1-(u-.11)/.11};
-function eyes(root,n,chars){const P=EYES.filter(e=>e.s==n).map(e=>({e,el:I(root,e.f.slice(2),e.x,e.y,e.w,e.h)}));
- return lt=>P.forEach((q,i)=>{const p=blinkP(lt,...chars[i>>1]),f=(q.e.ey0+p*(q.e.ey1-q.e.ey0+8))/q.e.h;q.el.style.clipPath=`inset(0 0 ${(1-f)*100}% 0)`})}
+function eyes(root,n,chars,withStatus){const P=EYES.filter(e=>e.s==n).map(e=>({e,el:I(root,e.f.slice(2),e.x,e.y,e.w,e.h,{transformOrigin:'50% 50%'})}));
+ if(withStatus)I(root,'status.png',0,0,NW,150,{zIndex:5});
+ return lt=>P.forEach((q,i)=>{const p=blinkP(lt,...chars[i>>1]);q.el.style.transform=`scaleY(${1-.93*p})`})}
 const island=r=>E(r,'div',{left:'422px',top:'38px',width:'344px',height:'102px',borderRadius:'51px',background:'#181B25',zIndex:5});
 function scroller(r,page,H,keys,veil){const L=E(r,'div',{left:0,top:0,width:NW+'px',height:H+'px'});IB(L,page,0,0,NW,H);const V=veil?E(r,'div',{left:0,top:0,width:NW+'px',height:'190px',background:'linear-gradient(#FDF8EE 62%,rgba(253,248,238,0))',zIndex:4,opacity:0}):null;I(r,'status.png',0,0,NW,150,{zIndex:5});return a=>{const sc=key(keys,a);L.style.transform=`translateY(${-sc}px)`;if(V)V.style.opacity=cl(sc/220)}}
 function carousel(r,n){const S=[0,1,2].map(k=>IB(r,`b/c${n}_${k}.jpg`,0,0,NW,NH));island(r);
@@ -45,7 +46,7 @@ function age(r){I(r,'s3_base.jpg',0,0);const W=E(r,'div',{left:0,top:'690px',wid
    Object.assign(q.el.style,{top:yy+'px',transform:`scale(${sc})`,opacity:f,filter:`brightness(${q.dark?1+2.4*(1-s):1-.72*s})`})})})}}
 const GP={green:[0,0,-6],red:[159,8,0],yellow:[105,-10,0],blue:[0,0,6]};
 const SC=[
- r=>{I(r,'s1.jpg',0,0);const b=eyes(r,1,CFG.blink.s1);return(a,lt)=>b(lt)},
+ r=>{I(r,'s1.jpg',0,0);const b=eyes(r,1,CFG.blink.s1,1);return(a,lt)=>b(lt)},
  r=>{I(r,'s2_clean.jpg',0,0);const J=CFG.jump,S=GUM.map(g=>I(r,`g_${g.c}.png`,g.x,g.y,g.w,g.h,{transformOrigin:'50% 100%'}));
   return(a,lt)=>{lt=Math.min(lt,J.start+2*J.cycle);S.forEach((s,k)=>{const g=GUM[k],[rest,r0,r1]=GP[g.c],q=(((lt-J.start-k*J.stagger)%J.cycle)+J.cycle)%J.cycle,u=q/J.len,lift=u<1?4*u*(1-u):0;
    let sy=1+.05*lift;if(u>=1&&q-J.len<.16)sy-=.08*Math.sin(Math.PI*(q-J.len)/.16);
@@ -55,7 +56,7 @@ const SC=[
  r=>carousel(r,5),r=>carousel(r,6),
  r=>scroller(r,'b/p7.jpg',4119,CFG.scroll7,true),
  r=>{I(r,'s8.jpg',0,0);const b=eyes(r,8,CFG.blink.s8);return(a,lt)=>b(lt)},
- r=>{I(r,'s9.jpg',0,0);const b=eyes(r,9,CFG.blink.s9);return(a,lt)=>b(lt)}];
+ r=>{I(r,'s9.jpg',0,0);const b=eyes(r,9,CFG.blink.s9,1);return(a,lt)=>b(lt)}];
 const V=CFG.loops*N,S0=[];let acc=0;for(let n=0;n<V;n++){S0.push(acc);acc+=CFG.hold[n%N]+M}
 const TOTAL=S0[V-1]+CFG.hold[(V-1)%N]+CFG.tail,FADE0=TOTAL-CFG.tail;
 const vis=[...Array(N)].map((_,i)=>{const L=[];for(let n=i;n<V;n+=N){const q=n-4,R=q>=0?S0[q]+CFG.hold[q%N]:-1e9;L.push({R,S:S0[n],hold:CFG.hold[i]})}return L});
