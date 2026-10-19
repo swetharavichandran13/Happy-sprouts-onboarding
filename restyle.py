@@ -392,6 +392,11 @@ def screen8():
     im = rd('8__Tagline.jpg')
     def pre(bg):
         ya, yb = 1195, 1655; o = bg.copy(); o[ya:yb] = rowfill(bg, ya, yb)[ya:yb]
+        o[1680:1755] = rowfill(bg, 1680, 1755)[1680:1755]   # supporting line: 'Little Joys' -> 'Happy Sprouts' (retypeset in Plus Jakarta Sans 400, same size/position)
+        f4 = ImageFont.truetype('fonts/pjs400.ttf', 184); lay = Image.new('RGBA', (1188 * 4, 75 * 4), (0, 0, 0, 0))
+        ImageDraw.Draw(lay).text((104 * 4, (1730 - 1680) * 4), 'Let\u2019s make Happy Sprouts a part of every day.', font=f4, fill=(117, 115, 110, 255), anchor='ls')
+        ar = np.array(lay.resize((1188, 75), Image.LANCZOS)); aa = ar[..., 3:4].astype(np.float32) / 255
+        o[1680:1755] = (o[1680:1755].astype(np.float32) * (1 - aa) + ar[..., :3][..., ::-1] * aa).astype(np.uint8)
         ss = 4; SZ = 108; font = ImageFont.truetype(FONT, SZ * ss); layer = Image.new('RGBA', (1188 * ss, (yb - ya) * ss), (0, 0, 0, 0)); dr = ImageDraw.Draw(layer)
         asc = -font.getbbox('l', anchor='ls')[1] / ss; base3 = 1502 + asc; DARK = (56, 55, 51); cc = tuple(int(c) for c in CORAL)
         for i, (t, c) in enumerate([('Good habits,', DARK), ('happy little', cc), ('humans.', cc)]):

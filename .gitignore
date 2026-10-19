@@ -2,3 +2,7 @@ frames*/
 *.mp4
 *.zip
 __pycache__/
+audio/*.onnx
+audio/*.bin
+audio/*.wav
+audio/music_old.py
