@@ -20,8 +20,11 @@ for name, t0 in place:
     f = int(.02 * SR); x = x.copy(); x[:f] *= np.linspace(0, 1, f); x[-f:] *= np.linspace(1, 0, f)
     vo[i:i + len(x)] += x
     print(f'{name}: {t0:.2f}-{t0 + len(x) / SR:.2f}s')
-voice_on = gaussian_filter1d((np.abs(vo) > .004).astype(float), .25 * SR)   # ~1 while speaking
-voice_on = np.clip(voice_on * 3, 0, 1)
+CR = 100                                                       # control-rate grid (Hz) for the level envelopes
+nc = N // CR + 2; t = np.arange(N) / SR; tc = np.arange(nc) / CR
+blk = np.abs(np.pad(vo, (0, nc * (SR // CR) - N))).reshape(nc, SR // CR).max(1)
+voice_c = np.clip(gaussian_filter1d((blk > .004).astype(float), .25 * CR) * 3, 0, 1)   # ~1 while speaking
+voice_on = np.interp(t, tc, voice_c)
 
 # ---------------- music bed (original; soft marimba-like plucks over a warm pad; no chimes / effects)
 rng = np.random.default_rng(7); mu = np.zeros(N)
@@ -55,11 +58,11 @@ mu = mu / np.sqrt(np.mean(mu ** 2))                    # unit RMS, levels are se
 
 # ---------------- independent levels (dBFS RMS of the music bed)
 VS_ = VS['VS']                                         # video-time start of loops 1,2,3 (+ end)
-t = np.arange(N) / SR
-lvl = np.full(N, -33.)                                 # between voice lines / screens 08-09: soft
-lvl = np.where(voice_on > .5, -42., lvl)               # under the voice: well behind it
-lvl = np.where(t >= VS_[2] + .5, -32., lvl)            # loop 3: soft but audible
-lvl = gaussian_filter1d(lvl, 1.1 * SR)                 # long, smooth ramps = no audible jumps
+lc = np.full(nc, -36.)                                 # between voice lines / screens 08-09: soft
+lc = np.where(voice_c > .5, -43., lc)                  # under the voice: well behind it
+lc = np.where(tc >= VS_[2] + .5, -35., lc)             # loop 3: soft but audible
+lc = gaussian_filter1d(lc, 1.1 * CR)                   # long, smooth ramps = no audible jumps
+lvl = np.interp(t, tc, lc)
 gain = 10 ** (lvl / 20)
 fade_in = np.minimum(1, t / 1.5); fade_out = np.minimum(1, np.maximum(0, (T - t)) / 3.0)
 mu = mu * gain * fade_in * fade_out
